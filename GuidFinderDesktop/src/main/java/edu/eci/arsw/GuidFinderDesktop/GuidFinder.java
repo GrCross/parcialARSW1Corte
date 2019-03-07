@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class GuidFinder {
 
@@ -37,15 +40,36 @@ public class GuidFinder {
     }
 
     public int countGuids(UUID guidToFind) {
-
-        int count = 0;
-        for (UUID uuid : guids) {
-            if (uuid.equals(guidToFind)) {
-                count++;
-            }
-
+        
+        int hilos = 4;
+        
+        GuidFinderThread[] threads = new GuidFinderThread[hilos];
+        AtomicInteger count = new AtomicInteger(0);
+        
+        int cantGuids = guids.length;
+        int segmento = cantGuids/hilos;
+        int cuentaSegmento = 0;
+        
+        int i;
+        for (i = 0; i < hilos-1; i++) {
+            threads[i] = new GuidFinderThread(cuentaSegmento, cuentaSegmento+segmento, guids, guidToFind, count);
+            cuentaSegmento += segmento;
         }
-        return count;
+        threads[i] = new GuidFinderThread(cuentaSegmento, cantGuids, guids, guidToFind, count);
+        
+        for (GuidFinderThread guidT : threads) {
+            guidT.start();
+        }
+        
+        for (GuidFinderThread guidT : threads) {
+            try {
+                guidT.join();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(GuidFinder.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        
+        return count.get();
 
     }
 

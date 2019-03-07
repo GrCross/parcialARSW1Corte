@@ -17,7 +17,6 @@ public class GuidFinderDesktopApplication {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
 }
